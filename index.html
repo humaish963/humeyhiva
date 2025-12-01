@@ -190,6 +190,12 @@
       display: grid;
       gap: 8px;
     }
+    .row-flex {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
     label {
       font-size: 14px;
       color: var(--muted);
@@ -351,6 +357,18 @@
           <button type="submit">Add countdown</button>
         </form>
       </div>
+      <div class="form-wrap">
+        <p class="section-title" style="margin:0;">GitHub Sync (optional)</p>
+        <div class="form-row">
+          <label for="github-token">GitHub token (needed to push; not stored)</label>
+          <input id="github-token" name="github-token" type="password" placeholder="ghp_..." autocomplete="off" />
+        </div>
+        <div class="row-flex">
+          <button type="button" id="load-github">Load shared countdowns</button>
+          <button type="button" id="save-github">Push changes now</button>
+        </div>
+        <div id="github-status" class="note"></div>
+      </div>
       <div class="grid" id="custom-countdowns"></div>
     </section>
   </main>
@@ -367,6 +385,13 @@
     };
     const customCountdowns = [];
     const CUSTOM_KEY = "customCountdowns";
+    const GITHUB_OWNER = "humaish963";
+    const GITHUB_REPO = "humeyhiva";
+    const GITHUB_PATH = "countdowns.json";
+    const GITHUB_BRANCH = "main";
+    let githubToken = "";
+    let githubSha = null;
+    let githubLoading = false;
 
     function formatSince(baseDate) {
       const now = new Date();
@@ -411,6 +436,19 @@
       }
     }
 
+    function setGithubStatus(message) {
+      const el = document.getElementById("github-status");
+      if (el) el.textContent = message || "";
+    }
+
+    function encodeBase64(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    function decodeBase64(str) {
+      return decodeURIComponent(escape(atob(str)));
+    }
+
     function persistCustomCountdowns() {
       try {
         const serializable = customCountdowns.map((item) => ({
@@ -447,6 +485,9 @@
       }
       if (element?.parentElement) {
         element.parentElement.removeChild(element);
+      }
+      if (githubToken) {
+        syncToGithub();
       }
     }
 
@@ -499,6 +540,9 @@
       customCountdowns.push({ uid, title, target: targetDate, clockId, daysId });
       if (!skipSave) {
         persistCustomCountdowns();
+        if (githubToken) {
+          syncToGithub();
+        }
       }
     }
 
@@ -515,6 +559,122 @@
         addCustomCountdown(title, dateValue);
         form.reset();
       });
+    }
+
+    async function fetchGithubCountdowns() {
+      if (githubLoading) return;
+      githubLoading = true;
+      setGithubStatus("Loading from GitHub...");
+      const headers = { Accept: "application/vnd.github+json" };
+      if (githubToken) headers.Authorization = `Bearer ${githubToken}`;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_PATH}?ref=${GITHUB_BRANCH}`, { headers });
+        if (res.status === 404) {
+          setGithubStatus("No shared countdowns yet in GitHub.");
+          githubSha = null;
+          githubLoading = false;
+          return;
+        }
+        if (!res.ok) {
+          setGithubStatus(`GitHub load failed: ${res.status}`);
+          githubLoading = false;
+          return;
+        }
+        const data = await res.json();
+        const content = decodeBase64((data.content || "").replace(/\n/g, ""));
+        githubSha = data.sha || null;
+        let parsed = [];
+        try {
+          parsed = JSON.parse(content);
+        } catch (err) {
+          setGithubStatus("GitHub content is not valid JSON.");
+          githubLoading = false;
+          return;
+        }
+        if (!Array.isArray(parsed)) {
+          setGithubStatus("GitHub content not in expected format.");
+          githubLoading = false;
+          return;
+        }
+        const existingKeys = new Set(customCountdowns.map((item) => `${item.title}|${item.target.toISOString()}`));
+        parsed.forEach((item) => {
+          if (item?.title && item?.date) {
+            const key = `${item.title}|${new Date(item.date).toISOString()}`;
+            if (!existingKeys.has(key)) {
+              addCustomCountdown(item.title, item.date, true);
+            }
+          }
+        });
+        persistCustomCountdowns();
+        setGithubStatus("Loaded shared countdowns from GitHub.");
+      } catch (err) {
+        setGithubStatus("Error loading from GitHub.");
+      } finally {
+        githubLoading = false;
+      }
+    }
+
+    async function syncToGithub() {
+      if (!githubToken) {
+        setGithubStatus("Add a GitHub token to push changes.");
+        return;
+      }
+      const payload = customCountdowns.map((item) => ({
+        title: item.title,
+        date: item.target.toISOString()
+      }));
+      const bodyContent = JSON.stringify(payload, null, 2);
+      const headers = {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${githubToken}`,
+        "Content-Type": "application/json"
+      };
+      const body = {
+        message: "Update shared countdowns",
+        content: encodeBase64(bodyContent),
+        branch: GITHUB_BRANCH
+      };
+      if (githubSha) body.sha = githubSha;
+      try {
+        setGithubStatus("Pushing to GitHub...");
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          setGithubStatus(`GitHub push failed: ${res.status}`);
+          return;
+        }
+        const data = await res.json();
+        githubSha = data?.content?.sha || null;
+        setGithubStatus("Shared countdowns updated on GitHub.");
+      } catch (err) {
+        setGithubStatus("Error pushing to GitHub.");
+      }
+    }
+
+    function handleGithubControls() {
+      const loadBtn = document.getElementById("load-github");
+      const saveBtn = document.getElementById("save-github");
+      const tokenInput = document.getElementById("github-token");
+      if (tokenInput) {
+        tokenInput.addEventListener("input", (e) => {
+          githubToken = e.target.value.trim();
+        });
+      }
+      if (loadBtn) {
+        loadBtn.addEventListener("click", () => {
+          githubToken = tokenInput?.value?.trim() || githubToken;
+          fetchGithubCountdowns();
+        });
+      }
+      if (saveBtn) {
+        saveBtn.addEventListener("click", () => {
+          githubToken = tokenInput?.value?.trim() || githubToken;
+          syncToGithub();
+        });
+      }
     }
 
     function renderDaysUntil(id, targetDate) {
@@ -546,6 +706,8 @@
 
     handleCustomForm();
     restoreCustomCountdowns();
+    handleGithubControls();
+    fetchGithubCountdowns();
     tick();
     setInterval(tick, 1000);
   </script>
