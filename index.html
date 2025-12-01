@@ -123,26 +123,6 @@
       margin: 0 0 6px;
       font-size: 20px;
     }
-    .card-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 8px;
-      gap: 8px;
-    }
-    .ghost-btn {
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
-    }
-    .ghost-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: rgba(255, 255, 255, 0.25);
-    }
     .meta {
       color: var(--muted);
       font-size: 14px;
@@ -177,53 +157,6 @@
       gap: 12px;
       margin-top: 12px;
     }
-    .form-wrap {
-      background: var(--card);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: var(--shadow);
-      display: grid;
-      gap: 12px;
-    }
-    .form-row {
-      display: grid;
-      gap: 8px;
-    }
-    .row-flex {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    label {
-      font-size: 14px;
-      color: var(--muted);
-    }
-    input[type="text"],
-    input[type="date"] {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-      font-size: 15px;
-    }
-    input::placeholder { color: rgba(246, 243, 255, 0.7); }
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 12px 16px;
-      font-weight: 600;
-      background: linear-gradient(120deg, var(--accent), var(--accent-2));
-      color: #1a0f1f;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.2s ease;
-      box-shadow: 0 10px 30px rgba(255, 143, 171, 0.35);
-    }
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
     .pill-stat {
       background: rgba(255, 255, 255, 0.08);
       border-radius: 999px;
@@ -342,35 +275,6 @@
       <p class="note">More adventures incoming—this space is ready for every new photo and video we add.</p>
     </section>
 
-    <section>
-      <p class="section-title">Add Another Countdown</p>
-      <div class="form-wrap">
-        <form id="custom-form">
-          <div class="form-row">
-            <label for="custom-title">Title</label>
-            <input id="custom-title" name="title" type="text" placeholder="e.g., Trip to Paris" required />
-          </div>
-          <div class="form-row">
-            <label for="custom-date">Date</label>
-            <input id="custom-date" name="date" type="date" required />
-          </div>
-          <button type="submit">Add countdown</button>
-        </form>
-      </div>
-      <div class="form-wrap">
-        <p class="section-title" style="margin:0;">GitHub Sync (optional)</p>
-        <div class="form-row">
-          <label for="github-token">GitHub token (needed to push; not stored)</label>
-          <input id="github-token" name="github-token" type="password" placeholder="ghp_..." autocomplete="off" />
-        </div>
-        <div class="row-flex">
-          <button type="button" id="load-github">Load shared countdowns</button>
-          <button type="button" id="save-github">Push changes now</button>
-        </div>
-        <div id="github-status" class="note"></div>
-      </div>
-      <div class="grid" id="custom-countdowns"></div>
-    </section>
   </main>
 
   <footer>
@@ -383,16 +287,6 @@
       wedding: new Date("2023-01-05T00:00:00"),
       maldives: new Date("2026-01-04T00:00:00")
     };
-    const customCountdowns = [];
-    const CUSTOM_KEY = "customCountdowns";
-    const GITHUB_OWNER = "humaish963";
-    const GITHUB_REPO = "humeyhiva";
-    const GITHUB_PATH = "countdowns.json";
-    const GITHUB_BRANCH = "main";
-    let githubToken = "";
-    let githubSha = null;
-    let githubLoading = false;
-
     function formatSince(baseDate) {
       const now = new Date();
       const diff = Math.max(now - baseDate, 0);
@@ -436,247 +330,6 @@
       }
     }
 
-    function setGithubStatus(message) {
-      const el = document.getElementById("github-status");
-      if (el) el.textContent = message || "";
-    }
-
-    function encodeBase64(str) {
-      return btoa(unescape(encodeURIComponent(str)));
-    }
-
-    function decodeBase64(str) {
-      return decodeURIComponent(escape(atob(str)));
-    }
-
-    function persistCustomCountdowns() {
-      try {
-        const serializable = customCountdowns.map((item) => ({
-          title: item.title,
-          date: item.target.toISOString()
-        }));
-        localStorage.setItem(CUSTOM_KEY, JSON.stringify(serializable));
-      } catch (err) {
-        // ignore storage failures (private mode, etc.)
-      }
-    }
-
-    function restoreCustomCountdowns() {
-      try {
-        const raw = localStorage.getItem(CUSTOM_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return;
-        parsed.forEach((item) => {
-          if (item?.title && item?.date) {
-            addCustomCountdown(item.title, item.date, true);
-          }
-        });
-      } catch (err) {
-        // ignore malformed storage
-      }
-    }
-
-    function deleteCustomCountdown(uid, element) {
-      const idx = customCountdowns.findIndex((item) => item.uid === uid);
-      if (idx !== -1) {
-        customCountdowns.splice(idx, 1);
-        persistCustomCountdowns();
-      }
-      if (element?.parentElement) {
-        element.parentElement.removeChild(element);
-      }
-      if (githubToken) {
-        syncToGithub();
-      }
-    }
-
-    function addCustomCountdown(title, dateValue, skipSave = false) {
-      const container = document.getElementById("custom-countdowns");
-      if (!container) return;
-      const targetDate = new Date(dateValue);
-      if (Number.isNaN(targetDate.getTime())) return;
-      const uid = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}`;
-      const clockId = `${uid}-clock`;
-      const daysId = `${uid}-days`;
-
-      const article = document.createElement("article");
-      article.className = "card";
-
-      const actions = document.createElement("div");
-      actions.className = "card-actions";
-      const deleteBtn = document.createElement("button");
-      deleteBtn.type = "button";
-      deleteBtn.className = "ghost-btn";
-      deleteBtn.textContent = "Delete";
-      deleteBtn.addEventListener("click", () => deleteCustomCountdown(uid, article));
-      actions.appendChild(deleteBtn);
-
-      const h2 = document.createElement("h2");
-      h2.textContent = title;
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.textContent = `Counting to ${targetDate.toDateString()}`;
-
-      const countdownDiv = document.createElement("div");
-      countdownDiv.className = "countdown";
-      countdownDiv.id = clockId;
-
-      const row = document.createElement("div");
-      row.className = "counts-row";
-      const pill = document.createElement("span");
-      pill.className = "pill-stat";
-      pill.id = daysId;
-      pill.textContent = "Days until then:";
-      row.appendChild(pill);
-
-      article.appendChild(actions);
-      article.appendChild(h2);
-      article.appendChild(meta);
-      article.appendChild(countdownDiv);
-      article.appendChild(row);
-      container.appendChild(article);
-
-      customCountdowns.push({ uid, title, target: targetDate, clockId, daysId });
-      if (!skipSave) {
-        persistCustomCountdowns();
-        if (githubToken) {
-          syncToGithub();
-        }
-      }
-    }
-
-    function handleCustomForm() {
-      const form = document.getElementById("custom-form");
-      if (!form) return;
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const titleInput = document.getElementById("custom-title");
-        const dateInput = document.getElementById("custom-date");
-        const title = titleInput?.value?.trim();
-        const dateValue = dateInput?.value;
-        if (!title || !dateValue) return;
-        addCustomCountdown(title, dateValue);
-        form.reset();
-      });
-    }
-
-    async function fetchGithubCountdowns() {
-      if (githubLoading) return;
-      githubLoading = true;
-      setGithubStatus("Loading from GitHub...");
-      const headers = { Accept: "application/vnd.github+json" };
-      if (githubToken) headers.Authorization = `Bearer ${githubToken}`;
-      try {
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_PATH}?ref=${GITHUB_BRANCH}`, { headers });
-        if (res.status === 404) {
-          setGithubStatus("No shared countdowns yet in GitHub.");
-          githubSha = null;
-          githubLoading = false;
-          return;
-        }
-        if (!res.ok) {
-          setGithubStatus(`GitHub load failed: ${res.status}`);
-          githubLoading = false;
-          return;
-        }
-        const data = await res.json();
-        const content = decodeBase64((data.content || "").replace(/\n/g, ""));
-        githubSha = data.sha || null;
-        let parsed = [];
-        try {
-          parsed = JSON.parse(content);
-        } catch (err) {
-          setGithubStatus("GitHub content is not valid JSON.");
-          githubLoading = false;
-          return;
-        }
-        if (!Array.isArray(parsed)) {
-          setGithubStatus("GitHub content not in expected format.");
-          githubLoading = false;
-          return;
-        }
-        const existingKeys = new Set(customCountdowns.map((item) => `${item.title}|${item.target.toISOString()}`));
-        parsed.forEach((item) => {
-          if (item?.title && item?.date) {
-            const key = `${item.title}|${new Date(item.date).toISOString()}`;
-            if (!existingKeys.has(key)) {
-              addCustomCountdown(item.title, item.date, true);
-            }
-          }
-        });
-        persistCustomCountdowns();
-        setGithubStatus("Loaded shared countdowns from GitHub.");
-      } catch (err) {
-        setGithubStatus("Error loading from GitHub.");
-      } finally {
-        githubLoading = false;
-      }
-    }
-
-    async function syncToGithub() {
-      if (!githubToken) {
-        setGithubStatus("Add a GitHub token to push changes.");
-        return;
-      }
-      const payload = customCountdowns.map((item) => ({
-        title: item.title,
-        date: item.target.toISOString()
-      }));
-      const bodyContent = JSON.stringify(payload, null, 2);
-      const headers = {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${githubToken}`,
-        "Content-Type": "application/json"
-      };
-      const body = {
-        message: "Update shared countdowns",
-        content: encodeBase64(bodyContent),
-        branch: GITHUB_BRANCH
-      };
-      if (githubSha) body.sha = githubSha;
-      try {
-        setGithubStatus("Pushing to GitHub...");
-        const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_PATH}`, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) {
-          setGithubStatus(`GitHub push failed: ${res.status}`);
-          return;
-        }
-        const data = await res.json();
-        githubSha = data?.content?.sha || null;
-        setGithubStatus("Shared countdowns updated on GitHub.");
-      } catch (err) {
-        setGithubStatus("Error pushing to GitHub.");
-      }
-    }
-
-    function handleGithubControls() {
-      const loadBtn = document.getElementById("load-github");
-      const saveBtn = document.getElementById("save-github");
-      const tokenInput = document.getElementById("github-token");
-      if (tokenInput) {
-        tokenInput.addEventListener("input", (e) => {
-          githubToken = e.target.value.trim();
-        });
-      }
-      if (loadBtn) {
-        loadBtn.addEventListener("click", () => {
-          githubToken = tokenInput?.value?.trim() || githubToken;
-          fetchGithubCountdowns();
-        });
-      }
-      if (saveBtn) {
-        saveBtn.addEventListener("click", () => {
-          githubToken = tokenInput?.value?.trim() || githubToken;
-          syncToGithub();
-        });
-      }
-    }
-
     function renderDaysUntil(id, targetDate) {
       const now = new Date();
       const diffMs = Math.max(targetDate - now, 0);
@@ -697,17 +350,8 @@
       renderDaysSince("relationship-days", dates.relationship);
       renderDaysSince("wedding-days", dates.wedding);
       renderDaysUntil("maldives-days", dates.maldives);
-      customCountdowns.forEach((entry) => {
-        const remaining = formatUntil(entry.target);
-        renderCountdown(entry.clockId, remaining);
-        renderDaysUntil(entry.daysId, entry.target);
-      });
     }
 
-    handleCustomForm();
-    restoreCustomCountdowns();
-    handleGithubControls();
-    fetchGithubCountdowns();
     tick();
     setInterval(tick, 1000);
   </script>
