@@ -22,10 +22,12 @@
       margin: 0;
       font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
       color: var(--text);
-      background: radial-gradient(circle at 10% 20%, rgba(255, 143, 171, 0.18), transparent 25%),
-                  radial-gradient(circle at 80% 0%, rgba(255, 212, 121, 0.24), transparent 28%),
-                  radial-gradient(circle at 30% 90%, rgba(111, 207, 255, 0.16), transparent 25%),
-                  var(--bg);
+      background:
+        linear-gradient(180deg, rgba(13, 12, 31, 0.85), rgba(13, 12, 31, 0.8)),
+        radial-gradient(circle at 10% 20%, rgba(255, 143, 171, 0.18), transparent 25%),
+        radial-gradient(circle at 80% 0%, rgba(255, 212, 121, 0.24), transparent 28%),
+        radial-gradient(circle at 30% 90%, rgba(111, 207, 255, 0.16), transparent 25%),
+        var(--bg);
       min-height: 100vh;
       line-height: 1.6;
       overflow-x: hidden;
@@ -190,6 +192,91 @@
     .gallery figure:hover video {
       transform: scale(1.04);
     }
+    .tabs {
+      display: inline-flex;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+    .tab-btn {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .tab-btn.active {
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      color: #1a0f1f;
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 30px rgba(255, 143, 171, 0.35);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .letter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .letter-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.05);
+      aspect-ratio: 3 / 4;
+      box-shadow: var(--shadow);
+    }
+    .letter-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.8s ease;
+    }
+    .letter-card:hover img {
+      transform: scale(1.04);
+    }
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 20px;
+    }
+    .lightbox.active { display: flex; }
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
     .note {
       font-size: 15px;
       color: var(--muted);
@@ -225,15 +312,15 @@
     <div class="hero-content">
       <div class="pill">Happy Birthday, my love ✨</div>
       <h1>Every second with you feels like magic.</h1>
-      <p class="lead">Here is a little counter of all that we have and all that’s coming. Two hearts, two dates that changed everything, and a lifetime of new memories waiting for us.</p>
+      <p class="lead">I LOVE YOU!</p>
     </div>
   </header>
 
   <main>
     <section class="grid">
       <article class="card">
-        <h2>Days Since We Said Yes</h2>
-        <div class="meta">From 07 May 2017 — a live counter of our journey</div>
+        <h2>Days Since the Impromptu "****"</h2>
+        <div class="meta">From 07 May 2017</div>
         <div class="countdown" id="relationship-countdown"></div>
         <div class="counts-row">
           <span class="pill-stat" id="relationship-days">Total days together:</span>
@@ -241,8 +328,8 @@
       </article>
 
       <article class="card">
-        <h2>Days Since We Said “I Do”</h2>
-        <div class="meta">From 05 January 2023 — time since we began forever</div>
+        <h2>In Sha Allah Forever</h2>
+        <div class="meta">From 05 January 2023</div>
         <div class="countdown" id="wedding-countdown"></div>
         <div class="counts-row">
           <span class="pill-stat" id="wedding-days">Total days married:</span>
@@ -251,35 +338,53 @@
 
       <article class="card">
         <h2>Countdown to Maldives Hug</h2>
-        <div class="meta">Back home on 04 January 2026 — every second closer</div>
+        <div class="meta">Back home on 04 January 2026</div>
         <div class="countdown" id="maldives-countdown"></div>
         <div class="counts-row">
-          <span class="pill-stat" id="maldives-days">Days until you're back:</span>
+          <span class="pill-stat" id="maldives-days">Days until you're back IA:</span>
         </div>
       </article>
     </section>
 
     <section>
-      <p class="section-title">Our Moments</p>
-      <div class="gallery">
-        <figure>
-          <img src="photo_2025-12-01_21-47-39.jpg" alt="Us together, captured memory">
-        </figure>
-        <figure>
-          <img src="photo_2025-12-01_21-47-41.jpg" alt="A favorite smile I never forget">
-        </figure>
-        <figure>
-          <img src="photo_2025-12-01_22-14-10.jpg" alt="Waiting to meet again" />
-        </figure>
+      <div class="tabs">
+        <button class="tab-btn active" data-target="tab-moments">Moments</button>
+        <button class="tab-btn" data-target="tab-letters">Letters</button>
       </div>
-      <p class="note">More adventures incoming—this space is ready for every new photo and video we add.</p>
+
+      <div id="tab-moments" class="tab-content active">
+        <p class="section-title">Our Moments</p>
+        <div class="gallery">
+          <figure>
+            <img src="photo_2025-12-01_21-47-39.jpg" alt="Us together, captured memory">
+          </figure>
+          <figure>
+            <img src="photo_2025-12-01_21-47-41.jpg" alt="A favorite smile I never forget">
+          </figure>
+          <figure>
+            <img src="photo_2025-12-01_22-14-10.jpg" alt="Waiting to meet again" />
+          </figure>
+        </div>
+        <p class="note">For more memories for us to add.</p>
+      </div>
+
+      <div id="tab-letters" class="tab-content">
+        <p class="section-title">Letters to You</p>
+        <div class="letter-grid" id="letter-gallery"></div>
+        <p class="note">For Humey to put more letters In Sha Allah</p>
+      </div>
     </section>
 
   </main>
 
   <footer>
-    Made with all my love. Let's keep counting memories together.
+    Made with all my love. Trying something new!
   </footer>
+
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close">Close</button>
+    <img id="lightbox-img" alt="Letter preview">
+  </div>
 
   <script>
     const dates = {
@@ -287,6 +392,13 @@
       wedding: new Date("2023-01-05T00:00:00"),
       maldives: new Date("2026-01-04T00:00:00")
     };
+    const letterImages = [
+      "Back.jpg",
+      "L1.jpg",
+      "L2.jpg",
+      "L3.jpg",
+      "L4.jpg"
+    ];
     function formatSince(baseDate) {
       const now = new Date();
       const diff = Math.max(now - baseDate, 0);
@@ -340,6 +452,70 @@
       }
     }
 
+    function renderLetters() {
+      const container = document.getElementById("letter-gallery");
+      if (!container) return;
+      if (!letterImages.length) {
+        container.innerHTML = "";
+        return;
+      }
+      container.innerHTML = "";
+      letterImages.forEach((src, idx) => {
+        const fig = document.createElement("figure");
+        fig.className = "letter-card";
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = `Handwritten letter ${idx + 1}`;
+        fig.appendChild(img);
+        fig.addEventListener("click", () => openLightbox(src, img.alt));
+        container.appendChild(fig);
+      });
+    }
+
+    function openLightbox(src, alt) {
+      const lightbox = document.getElementById("lightbox");
+      const img = document.getElementById("lightbox-img");
+      if (!lightbox || !img) return;
+      img.src = src;
+      img.alt = alt || "Letter preview";
+      lightbox.classList.add("active");
+    }
+
+    function closeLightbox() {
+      const lightbox = document.getElementById("lightbox");
+      const img = document.getElementById("lightbox-img");
+      if (lightbox) lightbox.classList.remove("active");
+      if (img) img.src = "";
+    }
+
+    function handleLightbox() {
+      const closeBtn = document.getElementById("lightbox-close");
+      const lightbox = document.getElementById("lightbox");
+      if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
+      if (lightbox) {
+        lightbox.addEventListener("click", (e) => {
+          if (e.target === lightbox) closeLightbox();
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeLightbox();
+      });
+    }
+
+    function handleTabs() {
+      const buttons = document.querySelectorAll(".tab-btn");
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.dataset.target;
+          buttons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          document.querySelectorAll(".tab-content").forEach((section) => {
+            section.classList.toggle("active", section.id === targetId);
+          });
+        });
+      });
+    }
+
     function tick() {
       const relElapsed = formatSince(dates.relationship);
       const wedElapsed = formatSince(dates.wedding);
@@ -352,6 +528,9 @@
       renderDaysUntil("maldives-days", dates.maldives);
     }
 
+    renderLetters();
+    handleLightbox();
+    handleTabs();
     tick();
     setInterval(tick, 1000);
   </script>
